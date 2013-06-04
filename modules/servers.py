@@ -1,14 +1,17 @@
 import config
-import tornado.netutil
+import re
+from tornado import tcpserver
 from pymongo import MongoClient
 from hashlib import sha1
-
+from base64 import b64decode
 
 client = MongoClient(config.mongo['host'], config.mongo['port'])
 collection = client[config.mongo['dbname']].netdump_responses
 
+_LOGOUT_CHECK = re.compile(r'[A-Z]{4}[0-9]{2} LOGOUT', re.U)
 
-class ExpectTCPServer(tornado.netutil.TCPServer):
+
+class ExpectTCPServer(tcpserver.TCPServer):
     """A simple TCP server that tries to match given, previouslly recorded
     incoming messages with the corresponding, previously seen response"""
 
@@ -25,10 +28,10 @@ class ExpectTCPServer(tornado.netutil.TCPServer):
             incoming_hash = s.hexdigest()
             doc = collection.find_one({"_id": incoming_hash})
             if doc:
-                response = doc['response'].encode('utf-8')
+                response = b64decode(doc['response']).encode('utf-8')
                 buf['data'] = ""
                 stream.write(response)
-            elif "OIIJ15 LOGOUT" in buf['data']:
+            elif _LOGOUT_CHECK.match(buf['data']):
                 stream.close()
 
         stream.read_until_close(_on_close, streaming_callback=_on_chunk)
