@@ -11,10 +11,6 @@ ssl_options = dict(
     ssl_version=ssl.PROTOCOL_SSLv3,
 )
 
-# Connection parameters for connecting to persistant store
-mongo = dict(
-    dbname='',
-    pool_id='',
-    port=27017,
-    host="127.0.0.1"
-)
+# Path to where on disk we should look for, and read, netdump
+# informaition to reply to
+netdump_response_path = "/home/snyderp/code/drano/log/netdumps/processed"
