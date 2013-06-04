@@ -13,4 +13,4 @@ ssl_options = dict(
 
 # Path to where on disk we should look for, and read, netdump
 # informaition to reply to
-netdump_response_path = "/home/snyderp/code/drano/log/netdumps/processed"
+netdump_response_path = ""

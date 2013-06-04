@@ -1,12 +1,8 @@
 import config
+import os
 import re
 from tornado import tcpserver
-from pymongo import MongoClient
 from hashlib import sha1
-from base64 import b64decode
-
-client = MongoClient(config.mongo['host'], config.mongo['port'])
-collection = client[config.mongo['dbname']].netdump_responses
 
 _LOGOUT_CHECK = re.compile(r'[A-Z]{4}[0-9]{2} LOGOUT', re.U)
 
@@ -26,9 +22,11 @@ class ExpectTCPServer(tcpserver.TCPServer):
             s = sha1()
             s.update(buf['data'])
             incoming_hash = s.hexdigest()
-            doc = collection.find_one({"_id": incoming_hash})
-            if doc:
-                response = b64decode(doc['response']).encode('utf-8')
+            possible_response_file = os.path.join(config.netdump_response_path, incoming_hash)
+            if os.path.isfile(possible_response_file):
+                handle = open(possible_response_file, 'r')
+                response = handle.read()
+                handle.close()
                 buf['data'] = ""
                 stream.write(response)
             elif _LOGOUT_CHECK.match(buf['data']):

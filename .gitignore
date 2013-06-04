@@ -1,3 +1,4 @@
+config.py
 data/
 .config
 *.py[cod]
