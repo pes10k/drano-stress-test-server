@@ -4,7 +4,7 @@ import re
 from tornado import tcpserver
 from hashlib import sha1
 
-_LOGOUT_CHECK = re.compile(r'[A-Z]{4}[0-9]{2} LOGOUT', re.U)
+_LOGOUT_CHECK = re.compile(r'([A-Z]{4}[0-9]+) LOGOUT', re.U)
 
 
 class ExpectTCPServer(tcpserver.TCPServer):
@@ -23,14 +23,19 @@ class ExpectTCPServer(tcpserver.TCPServer):
             s.update(buf['data'])
             incoming_hash = s.hexdigest()
             possible_response_file = os.path.join(config.netdump_response_path, incoming_hash)
+
             if os.path.isfile(possible_response_file):
                 handle = open(possible_response_file, 'r')
                 response = handle.read()
                 handle.close()
                 buf['data'] = ""
                 stream.write(response)
-            elif _LOGOUT_CHECK.match(buf['data']):
-                stream.close()
+            else:
+                match = _LOGOUT_CHECK.search(buf['data'])
+                if match:
+                    stream.write("* BYE LOGOUT Requested\n")
+                    stream.write(match.group(1) + " OK 73 good day (Success)\n")
+                    stream.close()
 
         stream.read_until_close(_on_close, streaming_callback=_on_chunk)
 
